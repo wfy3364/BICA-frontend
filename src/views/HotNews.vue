@@ -1,46 +1,118 @@
 <template>
-    <div>
-      <el-card>
-        <template #header>
-          <div class="card-header">
-            <span>爆款新闻分析</span>
-          </div>
-        </template>
-  
-        <el-button type="success" @click="addNews">模拟新增一天新闻</el-button>
-        <el-divider></el-divider>
-        <div v-if="addNewsMessage.length">{{ addNewsMessage }}</div>
-        <el-divider></el-divider>
-        <el-table :data="hotNews" v-if="hotNews.length" style="width: 100%">
-          <el-table-column prop="title" label="标题" />
-          <el-table-column prop="popularity" label="热度得分" />
-          <el-table-column prop="category" label="类别" />
-        </el-table>
-      </el-card>
-    </div>
-  </template>
-  
-  <script setup>
-  import { ref } from 'vue';
-  import { ElMessage } from 'element-plus';
-  
-  const addNewsMessage = ref('');
-  const hotNews = ref([
-    { title: 'New AI Model Shocks Industry', popularity: 95, score: 100 },
-    { title: 'Elections Results Change Landscape', popularity: 90, score: 99 }
-  ]);
-  
-  function addNews() {
-    // 添加一天新闻到数据库中
-    ElMessage.success('已模拟新增一天新闻');
-    addNewsMessage.value = "当前日期：2025-6-17，今日新增2条新闻"
-  };  
+  <div>
+    <el-card>
+      <template #header>
+        <div class="card-header">
+          <span>模拟数据输入</span>
+        </div>
+      </template>
+      <div class="controls">
+        <el-input-number
+            v-model="speed"
+            :min="1"
+            :max="300"
+            :step="1"
+            size="large"
+            style="width: 120px; margin-right: 16px;"
+        />
+        <el-button
+            type="success"
+            :disabled="playing"
+            @click="handlePlay"
+            size="large"
+            style="margin-right: 8px;"
+        >
+          模拟
+        </el-button>
+        <el-button
+            type="danger"
+            :disabled="!playing"
+            @click="handleStop"
+            size="large"
+        >
+          停止
+        </el-button>
+      </div>
+      <el-divider/>
+      <div class="time-row">
+        <el-button @click="fetchTime" size="default" icon="el-icon-refresh" style="margin-right: 12px;">
+          刷新
+        </el-button>
+        <span>当前模拟时间: {{ exposureTime }}</span>
+      </div>
+    </el-card>
+  </div>
+</template>
 
-  </script>
-  
-  <style scoped>
-  .card-header {
-    font-size: 18px;
-    font-weight: bold;
+<script setup>
+import {ref} from 'vue'
+import {ElMessage} from 'element-plus'
+
+const speed = ref(1)
+const playing = ref(false)
+const exposureTime = ref('尚无数据')
+
+async function handlePlay() {
+  try {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/exposure/start_exposure?speed=${speed.value}`)
+    if (!res.ok) {
+      const text = await res.text()
+      throw new Error(text || '启动失败')
+    }
+    ElMessage.success('已开始播放')
+    playing.value = true
+  } catch (e) {
+    ElMessage.error(e?.message || '启动失败')
   }
-  </style>
+}
+
+async function handleStop() {
+  try {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/exposure/stop_exposure`)
+    if (!res.ok) {
+      throw new Error('停止失败')
+    }
+    ElMessage.success('已停止')
+    playing.value = false
+  } catch (e) {
+    ElMessage.error('停止失败')
+  }
+}
+
+async function fetchTime() {
+  try {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/exposure/get_exposure_time`)
+    if (!res.ok) {
+      exposureTime.value = '尚无数据'
+      return
+    }
+    const text = await res.text()
+    exposureTime.value = text || '尚无数据'
+  } catch {
+    exposureTime.value = '尚无数据'
+  }
+}
+
+// 页面加载时自动获取一次时间
+fetchTime()
+</script>
+
+<style scoped>
+.card-header {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.time-row {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  min-height: 40px;
+}
+</style>
