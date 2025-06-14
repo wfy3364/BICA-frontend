@@ -45,12 +45,14 @@
 </template>
 
 <script setup>
-import {ref} from 'vue'
+import {ref, computed} from 'vue'
+import {useStore} from 'vuex'
 import {ElMessage} from 'element-plus'
 
 const speed = ref(1)
-const playing = ref(false)
 const exposureTime = ref('尚无数据')
+const store = useStore()
+const playing = computed(() => store.state.playing)
 
 async function handlePlay() {
   try {
@@ -60,7 +62,7 @@ async function handlePlay() {
       throw new Error(text || '启动失败')
     }
     ElMessage.success('已开始播放')
-    playing.value = true
+    store.dispatch('startPlaying')
   } catch (e) {
     ElMessage.error(e?.message || '启动失败')
   }
@@ -73,7 +75,7 @@ async function handleStop() {
       throw new Error('停止失败')
     }
     ElMessage.success('已停止')
-    playing.value = false
+    store.dispatch('stopPlaying')
   } catch (e) {
     ElMessage.error('停止失败')
   }
