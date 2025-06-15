@@ -10,7 +10,7 @@
         <el-input-number
             v-model="speed"
             :min="1"
-            :max="300"
+            :max="5000"
             :step="1"
             size="large"
             style="width: 120px; margin-right: 16px;"
