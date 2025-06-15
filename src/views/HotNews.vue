@@ -10,7 +10,7 @@
         <el-input-number
             v-model="speed"
             :min="1"
-            :max="300"
+            :max="5000"
             :step="1"
             size="large"
             style="width: 120px; margin-right: 16px;"
@@ -49,10 +49,9 @@
           <el-radio-group v-model="mode" size="small" style="margin-left: 16px;">
             <el-radio-button label="minute">按分钟</el-radio-button>
             <el-radio-button label="hour">按小时</el-radio-button>
-            <el-radio-button label="day">按天</el-radio-button>
+            <!-- <el-radio-button label="day">按天</el-radio-button> -->
             <el-button type="primary" size="small" @click="fetchAndRenderCharts" style="margin-left: 10px;">刷新图表</el-button>
           </el-radio-group>
-          
         </div>
       </template>
       <div ref="newsHotChartRef" class="chart-container"></div>
@@ -63,6 +62,31 @@
         <span>新闻类别热度趋势</span>
       </template>
       <div ref="categoryClickChartRef" class="chart-container"></div>
+    </el-card>
+
+    <el-card style="margin-top: 20px;">
+      <template #header>
+        <span>🔥 爆款新闻分析</span>
+      </template>
+      <div class="hot-news-section">
+        <el-card style="margin-bottom: 20px;">
+          <template #header>当前爆款新闻</template>
+          <div v-if="currentHot">
+            <p><strong>新闻标题：</strong>{{ currentHot.title }}</p>
+            <p><strong>新闻类别：</strong>{{ currentHot.category }}</p>
+          </div>
+          <div v-else>暂无数据</div>
+        </el-card>
+
+
+        <el-card>
+          <template #header>长期爆款类型分析</template>
+          <el-table :data="longTermHotCategories" stripe>
+            <el-table-column prop="category" label="新闻类别" />
+            <el-table-column prop="avg_clicks" label="平均点击数" />
+          </el-table>
+        </el-card>
+      </div>
     </el-card>
   </div>
 </template>
@@ -81,6 +105,25 @@ const playing = computed(() => store.state.playing)
 const newsHotChartRef = ref(null)
 const categoryClickChartRef = ref(null)
 const mode = ref('minute')
+
+const currentHotNews = ref([])
+const longTermHotCategories = ref([])
+const currentHot = ref(null)
+
+async function fetchCurrentHot() {
+  try {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/chart/current_hot`)
+    if (res.ok) {
+      const data = await res.json()
+      currentHot.value = data
+    } else {
+      currentHot.value = null
+    }
+  } catch {
+    currentHot.value = null
+  }
+}
+
 
 async function handlePlay() {
   try {
@@ -118,6 +161,7 @@ async function fetchTime() {
     }
     const text = await res.text()
     exposureTime.value = text || '尚无数据'
+    await fetchCurrentHot()
   } catch {
     exposureTime.value = '尚无数据'
   }
@@ -154,6 +198,21 @@ async function fetchAndRenderCharts() {
 
   renderChart(newsHotChartRef.value, ' ', hotData.times, hotData.series)
   renderChart(categoryClickChartRef.value, ' ', catData.times, catData.series)
+  await fetchCurrentHot()
+  fetchHotAnalysis()
+}
+
+async function fetchHotAnalysis() {
+  try {
+    const [nowRes, longRes] = await Promise.all([
+      fetch(`${import.meta.env.VITE_API_URL}/analytics/current_hot_news`),
+      fetch(`${import.meta.env.VITE_API_URL}/analytics/long_term_hot_categories`)
+    ])
+    currentHotNews.value = await nowRes.json()
+    longTermHotCategories.value = await longRes.json()
+  } catch (e) {
+    ElMessage.error('爆款新闻分析加载失败')
+  }
 }
 
 function renderChart(container, title, xData, series) {
@@ -174,6 +233,7 @@ function renderChart(container, title, xData, series) {
 
 onMounted(() => {
   fetchTime()
+  fetchCurrentHot()
   fetchAndRenderCharts()
 })
 
@@ -199,5 +259,10 @@ watch(mode, fetchAndRenderCharts)
 .chart-container {
   width: 100%;
   height: 400px;
+}
+.hot-news-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 </style>
