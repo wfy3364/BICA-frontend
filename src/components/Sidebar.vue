@@ -5,7 +5,7 @@
       <el-menu-item index="/lifecycle">新闻生命周期</el-menu-item>
       <el-menu-item index="/trend">类别趋势分析</el-menu-item>
       <el-menu-item index="/interest">用户兴趣分析</el-menu-item>
-      <el-menu-item index="/compare">多用户对比</el-menu-item>
+<!--      <el-menu-item index="/compare">多用户对比</el-menu-item>-->
       <el-menu-item index="/query">组合统计查询</el-menu-item>
       <el-menu-item index="/logs">查询日志</el-menu-item>
     </el-menu>
